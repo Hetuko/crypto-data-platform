@@ -1,5 +1,5 @@
 services:
-  postgres:
+  crypto_db:
     image: postgres:16
     container_name: crypto_pg
     environment:

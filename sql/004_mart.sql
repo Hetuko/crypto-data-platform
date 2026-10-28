@@ -14,6 +14,9 @@ WITH windowed AS (
                ORDER BY f.open_time
                ROWS BETWEEN 23 PRECEDING AND CURRENT ROW
            ) AS sma_24_candidate,
+           lag(f.open_time, 23) OVER (
+               PARTITION BY f.symbol_id ORDER BY f.open_time
+           ) AS open_time_23_rows_ago,
            lag(f.close) OVER (
                PARTITION BY f.symbol_id ORDER BY f.open_time
            ) AS previous_close,
@@ -26,7 +29,11 @@ WITH windowed AS (
 SELECT symbol,
        open_time,
        close,
-       CASE WHEN candle_number >= 24 THEN sma_24_candidate END AS sma_24,
+       CASE
+           WHEN candle_number >= 24
+                AND open_time_23_rows_ago = open_time - interval '23 hours'
+           THEN sma_24_candidate
+       END AS sma_24,
        CASE
            WHEN previous_open_time = open_time - interval '1 hour'
                 AND previous_close <> 0
@@ -52,6 +59,5 @@ WITH NO DATA;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_daily_summary_symbol_date
     ON mart.daily_summary (symbol, full_date);
 
--- Initial population; the future Airflow refresh_marts task can run this again
--- (or use REFRESH MATERIALIZED VIEW CONCURRENTLY after this first population).
+-- Initial population. Recurring updates are handled by sql/005_refresh_marts.sql.
 REFRESH MATERIALIZED VIEW mart.daily_summary;
