@@ -28,7 +28,10 @@ with DAG(
         task_id="load_dwh", conn_id=CONN_ID, sql="003_load_dwh.sql"
     )
     dq_checks = SQLCheckOperator(
-        task_id="dq_checks", conn_id=CONN_ID, sql="006_dq_checks.sql"
+        task_id="dq_checks",
+        conn_id=CONN_ID,
+        sql="006_dq_checks.sql",
+        retries=0,
     )
     refresh_marts = SQLExecuteQueryOperator(
         task_id="refresh_marts", conn_id=CONN_ID, sql="005_refresh_marts.sql"
